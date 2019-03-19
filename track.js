@@ -10,10 +10,6 @@ let model = null;
 // video.height = 400
 
 function flip_function() {
-  //var element = document.getElementById("myvideo");
-  //element.classList.toggle("flipped");
-
-
   modelParams.flipHorizontal = !modelParams.flipHorizontal;
   model.setModelParameters(modelParams);
 }
