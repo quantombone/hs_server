@@ -19,10 +19,11 @@
 </head>
 
 <body>
-  <canvas id="canvas" class="border canvasbox" height="480" width="640"></canvas>
+  <canvas id="canvas" class="canvasbox" height="480" width="640"></canvas>
   <br/>
   <video playsinline id="myvideo"
 	 height="480" width="640"
+         class=""
 	 style="
 		visibility: hidden; position:absolute; left: 0; top:0"></video>
   <br/>
@@ -34,10 +35,12 @@
 
   <div class="mb10">
   <div id="updatenote" class="updatenote mt10"> loading model ..</div>
+  <div id="flip_button" class="updatenote mt10"
+  onclick="flip_function()">Flip Image</div>
   </div>
 
   <script src="handtrack.min.js?q=34433344"> </script>
-  <script src="track.js"></script>
+  <script src="track.js?q=34"></script>
 </body>
 
 </html>
