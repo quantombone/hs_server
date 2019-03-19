@@ -18,22 +18,25 @@
 </head>
 
 <body>
+  <img id="intro" src="intro.gif" style="position:absolute; left:0px; top:0px;
+  width:100%; height:100%;"/>
   <canvas id="canvas" class="canvasbox" height="480" width="640"></canvas>
-  <br/>
+
   <video playsinline id="myvideo"
 	 height="480" width="640"
 	 style="visibility: hidden;
                 position:absolute;
                 left: 0;
                 top:0"></video>
-  <br/>
-  <div class="">
+
+  <div style="position:absolute; top:0px; right:0px;">
   <div id="updatenote" class="updatenote mt10"> Loading Model ..</div>
   <div id="flip_button" class="updatenote mt10"
+       style="visibility:hidden;"
        onclick="flip_function()">Flip Image</div>
   </div>
   <script src="handtrack.min.js"> </script>
-  <script src="track.js"></script>
+  <script src="track.js?qe=4344"></script>
 </body>
 
 </html>

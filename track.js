@@ -21,36 +21,12 @@ var modelParams = {
     scoreThreshold: 0.6,    // confidence threshold for predictions.
 }
 
-function startVideo() {
-    handTrack.startVideo(video).then(function (status) {
-        console.log("video started", status);
-	video.play();
-        if (status) {
-            updateNote.innerText = "Video started. Now tracking";
-            isVideo = true;
-            runDetection();
-        } else {
-            updateNote.innerText = "Please enable video";
-        }
-    });
-}
-
-function toggleVideo() {
-    if (!isVideo) {
-        updateNote.innerText = "Starting video";
-        startVideo();
-    } else {
-        updateNote.innerText = "Stopping video";
-        handTrack.stopVideo(video);
-        isVideo = false;
-        updateNote.innerText = "Video stopped";
-    }
-}
-
 function runDetection() {
     model.detect(video).then(predictions => {
-        if (predictions.length > 0)
-		console.log("Predictions: ", predictions);
+        if (predictions.length > 0) {
+          // uncomment this to output predictions to console
+	  //console.log("Predictions: ", predictions);
+          }
         model.renderPredictions(predictions, canvas, context, video);
         if (isVideo) {
             requestAnimationFrame(runDetection);
@@ -76,7 +52,11 @@ handTrack.load(modelParams).then(lmodel => {
     handTrack.startVideo(video).then(function (status) {
         console.log("video started", status);
         if (status) {
-            updateNote.innerText = "Video started. Now tracking";
+            //console.log('hiding stuff')
+            updateNote.style.visibility='hidden';
+            flip_button.style.visibility='visible';
+            document.getElementById('intro').style.visibility='hidden';
+            //updateNote.innerText = "Video started. Now tracking";
             isVideo = true;
             runDetection();
         } else {
@@ -86,4 +66,3 @@ handTrack.load(modelParams).then(lmodel => {
 
 });
 
-//toggleVideo();
