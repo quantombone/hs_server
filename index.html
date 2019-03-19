@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Hand Detection</title>
+  <!--<link rel="stylesheet" href="https://unpkg.com/carbon-components@latest/css/carbon-components.css" />-->
+  <link rel="stylesheet" href="track.css">
+</head>
+
+<body>
+  <canvas id="canvas" class="border canvasbox" height="480" width="640"></canvas>
+  <br/>
+  <video playsinline id="myvideo"
+	 height="480" width="640"
+	 style="
+		visibility: hidden; position:absolute; left: 0; top:0"></video>
+  <br/>
+
+  <!-- -moz-transform: scaleX(-1);
+		-o-transform: scaleX(-1);
+		-webkit-transform: scaleX(-1);
+		transform: scaleX(-1); -->
+
+  <div class="mb10">
+  <div id="updatenote" class="updatenote mt10"> loading model ..</div>
+  </div>
+
+  <script src="handtrack.min.js?q=34433344"> </script>
+  <script src="track.js"></script>
+</body>
+
+</html>
