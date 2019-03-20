@@ -41,7 +41,7 @@ function startVideo(video) {
       .getUserMedia({
         audio: false,
         video: {
-          facingMode: "user"
+          facingMode: "environment"
         }
       })
       .then(stream => {
