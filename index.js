@@ -20,7 +20,7 @@ const defaultParams = {
   iouThreshold: 0.5,
   scoreThreshold: 0.99,
   modelType: "ssdlitemobilenetv2"
-}
+};
 
 async function load(params) {
   let modelParams = Object.assign({}, defaultParams, params);
