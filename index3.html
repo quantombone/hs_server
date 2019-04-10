@@ -3,7 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <title>HTML5 video viewer</title>
-  <link rel="stylesheet" href="track.css">
+  <link rel="stylesheet"
+        href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+        integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
 
   <link rel="apple-touch-icon" sizes="180x180"
         href="apple-touch-icon.png">
@@ -15,51 +17,47 @@
   <link rel="mask-icon" href="safari-pinned-tab.svg" color="#5bbad5">
   <meta name="msapplication-TileColor" content="#00aba9">
   <meta name="theme-color" content="#ffffff">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
 </head>
 
 <body>
-
+  <div class="container">
   <video playsinline id="myvideo"
-	 height="360" width="520"
-	 style="visibility: visible;
-                position:relative;
+	 style="visibility: hidden;
+                position:absolute;
                 left: 0;
                 top:0"></video>
 
   <canvas id="canvas"></canvas>
+  <br/>
+
+  <button id="start_button" class="btn btn-primary"
+       onclick="start_capture()">Start</button>
+
+  <button id="download_button" class="btn btn-primary disabled"
+       onclick="">Download</button>
+
+  <p id="elemH" class=""></p>
+
   <div id="images"></div>
 
-  <div style="position:absolute; top:0px; right:0px;">
-  <div id="updatenote" class="updatenote mt10"></div>
 
-  <div id="elemN" class="updatenote mt10"
-       style="visibility:visible;"
-       ></div>
+  <p class="lead info">
+    Welcome to the Video Recorder Javascript App! If you hit 'start' we
+    will record N images into a zip file, and a download button will show
+    up. Here are other variants:
+    <br/>
+    <a href="index3.html?N=100&F=date&H=240&W=320">index3.html?N=100&F=date&H=240&W=320</a>
+    <br/>
+    <a href="index3.html?N=100&F=example.zip">index3.html?N=100&F=example.zip</a>
+    <br/>
+    <a href="index3.html?N=1000&F=date">index3.html?N=1000&F=date</a>
+    <br/>
+    <a href="index3.html?N=1000&F=example.zip">index3.html?N=1000&F=example.zip</a>
 
-  <div id="elemF" class="updatenote mt10"
-       style="visibility:visible;"
-       ></div>
-
-  <div id="thresh_button1" class="updatenote mt10"
-       style="visibility:visible;"
-       onclick="start_capture()">Start</div>
+  </p>
 
   </div>
-
-<div>
-Welcome to the Video Recorder Javascript App! If you hit 'start' we
-will record N images into a zaip file, and a download button will show
-up. Here are other variants:
-<br/>
-<a href="index3.html?N=100&F=date">index3.html?N=100&F=date</a>
-<br/>
-<a href="index3.html?N=100&F=example.zip">index3.html?N=100&F=example.zip</a>
-<br/>
-<a href="index3.html?N=1000&F=date">index3.html?N=1000&F=date</a>
-<br/>
-<a href="index3.html?N=1000&F=example.zip">index3.html?N=1000&F=example.zip</a>
-
-</div>
   <script>
 
     var getUrlParameter = function getUrlParameter(sParam) {
@@ -78,19 +76,38 @@ up. Here are other variants:
       }
     };
 
+
+
     const video = document.getElementById("myvideo");
     const canvas = document.getElementById("canvas");
-    let updateNote = document.getElementById("updatenote");
+
     let capture_on = false;
 
     var N = getUrlParameter('N') || 100;
-    document.getElementById('elemN').innerHTML='N='+N;
     var F = getUrlParameter('F') || 'images.zip';
+
+
+    var height = getUrlParameter('H');
+    var width = getUrlParameter('W');
+    if (height != undefined && width != undefined) {
+      console.log('Setting user provided H='+height+' W='+width);
+      myvideo.width=width;
+      myvideo.height=height;
+    }
+
+
+
+
+
+
 
     var images = [];
     var zip;
     var zipimages;
     function start_capture() {
+
+      var button = document.getElementById('download_button');
+      button.classList.add("disabled");
       zip = new JSZip();
       zipimages = zip.folder("images");
       capture_on = true;
@@ -125,7 +142,9 @@ up. Here are other variants:
         window.localStream = stream;
         video.srcObject = stream
         video.onloadedmetadata = () => {
-          video.play()
+          video.play();
+
+          document.getElementById('elemH').innerHTML = 'N='+N+' H='+myvideo.height+' W='+myvideo.width;
           resolve(true)
         }
       }).catch(function (err) {
@@ -151,6 +170,8 @@ function runDetection() {
     var dataurl = canvas.toDataURL("image/png");
     img.src = dataurl;
     images.push(img.src);
+
+    //set the size of the tiny preview image to show
     img.width="160";
     img.height="120";
     var el = document.getElementById("images");
@@ -171,16 +192,12 @@ function runDetection() {
       console.log('Generating file: '+F)
       zip.generateAsync({type:"blob"})
         .then(function(content) {
-          // see FileSaver.js
-
-          var button = document.createElement('button');
+          var button = document.getElementById('download_button');
           button.innerHTML='Download '+filename+' (N='+images.length+')';
-          el.insertBefore(document.createElement('br'), el.childNodes[0]);
-          el.insertBefore(button, el.childNodes[0]);
-
           button.onclick = function() {
             saveAs(content, filename);
           };
+          button.classList.remove("disabled");
         });
     }
   }
@@ -192,11 +209,9 @@ function runDetection() {
   startVideo(video).then(function (status) {
     console.log("video started", status);
     if (status) {
-
-      updateNote.style.visibility='hidden';
       runDetection();
     } else {
-      updateNote.innerText = "Please enable video";
+
     }
   });
     </script>
