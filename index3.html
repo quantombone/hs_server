@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>video</title>
+  <title>HTML5 video viewer</title>
   <link rel="stylesheet" href="track.css">
 
   <link rel="apple-touch-icon" sizes="180x180"
@@ -18,35 +18,84 @@
 </head>
 
 <body>
-  
-  <canvas id="canvas" class="canvasbox"></canvas>
+
   <video playsinline id="myvideo"
 	 height="360" width="520"
 	 style="visibility: visible;
-                position:absolute;
+                position:relative;
                 left: 0;
                 top:0"></video>
 
+  <canvas id="canvas"></canvas>
+  <div id="images"></div>
+
   <div style="position:absolute; top:0px; right:0px;">
-  <div id="updatenote" class="updatenote mt10"> Loading Model ..</div>
-  <div id="flip_button" class="updatenote mt10"
-       style="visibility:hidden;"
-       onclick="flip_function()">Flip Image</div>
+  <div id="updatenote" class="updatenote mt10"></div>
+
+  <div id="elemN" class="updatenote mt10"
+       style="visibility:visible;"
+       ></div>
+
+  <div id="elemF" class="updatenote mt10"
+       style="visibility:visible;"
+       ></div>
+
   <div id="thresh_button1" class="updatenote mt10"
        style="visibility:visible;"
-       onclick="thresh_increase(0.1)">T+</div>
-  <div id="thresh_button2" class="updatenote mt10"
-       style="visibility:visible;"
-       onclick="thresh_increase(-0.1)">T-</div>
-  <div id="thresh_button3" class="updatenote mt10"
-       style="visibility:visible;">Thresh</div>
+       onclick="start_capture()">Start</div>
+
   </div>
 
+<div>
+Welcome to the Video Recorder Javascript App! If you hit 'start' we will record N images into a zaip file, and a download button will show up.
+</div>
   <script>
 
+    var getUrlParameter = function getUrlParameter(sParam) {
+      var sPageURL = window.location.search.substring(1),
+      sURLVariables = sPageURL.split('&'),
+      sParameterName,
+      i;
+
+      for (i = 0; i < sURLVariables.length; i++) {
+        sParameterName = sURLVariables[i].split('=');
+
+        if (sParameterName[0] === sParam) {
+          return sParameterName[1] === undefined ? true :
+            decodeURIComponent(sParameterName[1]);
+        }
+      }
+    };
+
     const video = document.getElementById("myvideo");
+    const canvas = document.getElementById("canvas");
     let updateNote = document.getElementById("updatenote");
-    
+    let capture_on = false;
+
+    var N = getUrlParameter('N') || 100;
+    document.getElementById('elemN').innerHTML='N='+N;
+    var F = getUrlParameter('F') || 'images.zip';
+
+    var images = [];
+    var zip;
+    var zipimages;
+    function start_capture() {
+      zip = new JSZip();
+      zipimages = zip.folder("images");
+      capture_on = true;
+      images = [];
+
+      var myNode = document.getElementById("images");
+      while (myNode.firstChild) {
+        myNode.removeChild(myNode.firstChild);
+      }
+    }
+
+    function stop_capture() {
+      capture_on = false;
+    }
+
+
     function startVideo(video) {
   // Video must have height and width in order to be used as input for NN
   // Aspect ratio of 3/4 is used to support safari browser.
@@ -75,14 +124,65 @@
 
 }
 
-    
+function pad(n, width, z) {
+  z = z || '0';
+  n = n + '';
+  return n.length >= width ? n : new Array(width - n.length + 1).join(z) + n;
+}
+
+function runDetection() {
+  canvas.width = video.width;
+  canvas.height = video.height;
+  canvas.getContext("2d").drawImage(video,0,0,video.width,video.height);
+
+  if (capture_on) {
+    var img = document.createElement("img");
+    var dataurl = canvas.toDataURL("image/png");
+    img.src = dataurl;
+    images.push(img.src);
+    img.width="160";
+    img.height="120";
+    var el = document.getElementById("images");
+
+    el.insertBefore(img, el.childNodes[0]);
+
+    var base64 = dataurl.replace(/^data:image\/(png|jpg);base64,/, "")
+    var imgname = 'image'+pad(images.length-1,5)+'.png';
+    zipimages.file(imgname, base64, {base64: true});
+    if (images.length == N) {
+      capture_on = false;
+
+      var filename = F;
+      if (F == 'date') {
+        filename = (new Date()).toISOString() + '.zip';
+      }
+
+      console.log('Generating file: '+F)
+      zip.generateAsync({type:"blob"})
+        .then(function(content) {
+          // see FileSaver.js
+
+          var button = document.createElement('button');
+          button.innerHTML='Download '+filename+' (N='+images.length+')';
+          el.insertBefore(document.createElement('br'), el.childNodes[0]);
+          el.insertBefore(button, el.childNodes[0]);
+
+          button.onclick = function() {
+            saveAs(content, filename);
+          };
+        });
+    }
+  }
+  requestAnimationFrame(runDetection);
+
+}
+
+
   startVideo(video).then(function (status) {
     console.log("video started", status);
     if (status) {
-      //threshButton.innerHTML=modelParams.scoreThreshold;
+
       updateNote.style.visibility='hidden';
-      //flip_button.style.visibility='hidden';
-      //document.getElementById('intro').style.visibility='hidden';
       runDetection();
     } else {
       updateNote.innerText = "Please enable video";
@@ -90,6 +190,8 @@
   });
     </script>
 
+ <script src="jszip.min.js"></script>
+ <script src="FileSaver.js"></script>
 </body>
 
 </html>
