@@ -136,6 +136,8 @@
     var zipsummary = [];
     function start_capture() {
 
+      console.log('capture starting, video.videoHeight is '+video.videoHeight+'/'+video.videoWidth)
+
 
       video.style.border = '10px solid red';
 
@@ -235,7 +237,6 @@ async function add_to_gallery(dataurl, iteration) {
 
 
 async function add_captured_image(image_time, dataurl, iteration) {
-  //console.log('acp1 iteration', iteration);
 
   if (gallery)
     add_to_gallery(dataurl, iteration);
@@ -246,15 +247,12 @@ async function add_captured_image(image_time, dataurl, iteration) {
 
   zipsummary.push({'image':imgname, 'time':image_time,
                    'height':canvas.height, 'width': canvas.width});
-  //const currDate = new Date();
-  //const dateWithOffset = new Date(currDate.getTime() - currDate.getTimezoneOffset() * 60000);
-  console.log('iteration', iteration, ' time is', image_time)
+
+  //console.log('iteration', iteration, ' time is', image_time)
   zipimages.file(imgname, base64, {base64: true, date: new Date(ziptime.getTime()-N*100000+iteration*100000)});
 
   // change start button text
   indicator.innerHTML='Record '+iteration+'/'+N;
-  //indicator.innerHTML=
-  //console.log('acp2 iteration', iteration);
 
   if (iteration == N) {
     finish_zipfile();
