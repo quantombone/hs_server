@@ -21,52 +21,53 @@
 </head>
 
 <body>
-  <div class="container">
+  <div class="container" id="container1">
   <video playsinline id="myvideo"
 	 style="visibility: hidden;
                 position:absolute;
                 left: 0;
                 top:0"></video>
 
+  <div id="other">
   <canvas id="canvas" style="width:100%; text-align:center;"></canvas>
   <br/>
 
+  <div style="width:100%; text-align:center;">
   <button id="start_button" class="btn btn-primary"
        onclick="start_capture()">Start</button>
-
-  <button id="download_button" class="btn btn-primary disabled"
+  </div>
+  <div style="width:100%; text-align:center;">
+  <button id="download_button" class="btn btn-primary disabled" style="visibility:hidden;"
        onclick="">Download</button>
+  </div>
 
   <p id="elemH" class=""></p>
 
   <div class="container">
     <div class="row" id="images">
-
-
     </div>
   </div>
 
-
-  <p class="lead info">
-    Welcome to the Video Recorder Javascript App! If you hit 'start' we
-    will record N images into a zip file, and a download button will show
-    up.
-</p>
-  <p class="lead info">
-Here are other variants:
-    <br/>
-    <a href="index.html?N=100&F=date&H=240&W=320">index.html?N=100&F=date&H=240&W=320</a>
-    <br/>
-    <a href="index.html?N=100&F=example.zip">index.html?N=100&F=example.zip</a>
-    <br/>
-    <a href="index.html?N=1000&F=date">index.html?N=1000&F=date</a>
-    <br/>
-    <a href="index.html?N=1000&F=example.zip">index.html?N=1000&F=example.zip</a>
-  </p>
-
+  <!-- <p class="lead info"> -->
+  <!--   Welcome to the Video Recorder Javascript App! If you hit 'start' we -->
+  <!--   will record N images into a zip file, and a download button will show -->
+  <!--   up. -->
+  <!-- </p> -->
+  <!-- <p class="lead info"> -->
+  <!--   Here are other variants: -->
+  <!--   <br/> -->
+  <!--   <a href="index.html?N=100&F=date&H=240&W=320">index.html?N=100&F=date&H=240&W=320</a> -->
+  <!--   <br/> -->
+  <!--   <a href="index.html?N=100&F=example.zip">index.html?N=100&F=example.zip</a> -->
+  <!--   <br/> -->
+  <!--   <a href="index.html?N=1000&F=date">index.html?N=1000&F=date</a> -->
+  <!--   <br/> -->
+  <!--   <a href="index.html?N=1000&F=example.zip">index.html?N=1000&F=example.zip</a> -->
+  <!-- </p> -->
   </div>
-  <script>
+  </div> <!-- end container -->
 
+  <script>
     var getUrlParameter = function getUrlParameter(sParam) {
       var sPageURL = window.location.search.substring(1),
       sURLVariables = sPageURL.split('&'),
@@ -82,8 +83,6 @@ Here are other variants:
         }
       }
     };
-
-
 
     const video = document.getElementById("myvideo");
     const canvas = document.getElementById("canvas");
@@ -102,21 +101,16 @@ Here are other variants:
       myvideo.height=height;
     }
 
-
-
-
-
-
-
     var images = [];
     var zip;
     var zipimages;
+    var zipsummary = [];
     function start_capture() {
 
-      var button = document.getElementById('download_button');
-      button.classList.add("disabled");
-      button.disabled = true;
-
+      var dbutton = document.getElementById('download_button');
+      dbutton.classList.add("disabled");
+      dbutton.disabled = true;
+      dbutton.style.visibility='hidden';
       var sbutton = document.getElementById('start_button');
       sbutton.classList.add("disabled");
       sbutton.disabled = true;
@@ -138,34 +132,40 @@ Here are other variants:
 
 
     function startVideo(video) {
-  // Video must have height and width in order to be used as input for NN
-  // Aspect ratio of 3/4 is used to support safari browser.
-  video.width = video.width || 640;
-  video.height = video.height || video.width * (3 / 4)
+      // Video must have height and width in order to be used as input for NN
+      // Aspect ratio of 3/4 is used to support safari browser.
+      if (video.width == undefined) {
+        console.log('video.width  is undefined now')
+      }
 
-  return new Promise(function (resolve, reject) {
-    navigator.mediaDevices
-      .getUserMedia({
-        audio: false,
-        video: {
-          facingMode: "environment"
-        }
-      })
-      .then(stream => {
-        window.localStream = stream;
-        video.srcObject = stream
-        video.onloadedmetadata = () => {
-          video.play();
+      if (video.height == undefined) {
+        console.log('video.height  is undefined now')
+      }
+      video.width = video.width || 640;
+      video.height = video.height || video.width * (3 / 4)
 
-          document.getElementById('elemH').innerHTML = 'N='+N+' H='+myvideo.height+' W='+myvideo.width;
-          resolve(true)
-        }
-      }).catch(function (err) {
-        resolve(false)
+      return new Promise(function (resolve, reject) {
+        navigator.mediaDevices
+          .getUserMedia({
+            audio: false,
+            video: {
+              facingMode: "environment"
+            }
+          })
+          .then(stream => {
+            window.localStream = stream;
+            video.srcObject = stream
+            video.onloadedmetadata = () => {
+              video.play();
+
+              document.getElementById('elemH').innerHTML = 'N='+N+' H='+myvideo.height+' W='+myvideo.width;
+              resolve(true)
+            }
+          }).catch(function (err) {
+            resolve(false)
+          });
       });
-  });
-
-}
+    }
 
 function pad(n, width, z) {
   z = z || '0';
@@ -176,6 +176,8 @@ function pad(n, width, z) {
 function runDetection() {
   canvas.width = video.width;
   canvas.height = video.height;
+
+  var image_time = new Date().getTime();
   canvas.getContext("2d").drawImage(video,0,0,video.width,video.height);
 
   if (capture_on) {
@@ -188,6 +190,8 @@ function runDetection() {
     img.src = dataurl;
     images.push(img.src);
 
+
+
     var sbutton = document.getElementById('start_button');
     sbutton.innerHTML='Record '+images.length+'/'+N;
 
@@ -196,8 +200,7 @@ function runDetection() {
     img.height="120";
     var el = document.getElementById("images");
 
-
-    newtit.innerHTML='Index '+(images.length-1);
+    newtit.innerHTML='Image '+(images.length-1);
     newtit.style.textAlign='center';
 
     newdiv2.style.textAlign='center';
@@ -211,6 +214,10 @@ function runDetection() {
 
     var base64 = dataurl.replace(/^data:image\/(png|jpg);base64,/, "")
     var imgname = 'image'+pad(images.length-1,5)+'.png';
+
+    zipsummary.push({'image':imgname, 'time':image_time, 'height':
+    height, 'width': width});
+
     zipimages.file(imgname, base64, {base64: true});
     if (images.length == N) {
       capture_on = false;
@@ -223,6 +230,18 @@ function runDetection() {
         filename = (new Date()).toISOString() + '.zip';
       }
 
+      var fps = zipsummary.length /
+      ((zipsummary[zipsummary.length-1].time - zipsummary[0].time) / 1000.0);
+
+      console.log('fps is:', fps)
+      var jsonny = {'data':zipsummary,
+        'fps': fps,
+        'browser':navigator.userAgent,
+        'url': window.location.href
+      };
+
+      zip.file("summary.json", JSON.stringify(jsonny))
+
       console.log('Generating file: '+F)
       zip.generateAsync({type:"blob"},function updateCallback(metadata)
       {
@@ -232,13 +251,14 @@ function runDetection() {
           sbutton.innerHTML='Start';
           sbutton.classList.remove("disabled");
           sbutton.disabled = false;
-          var button = document.getElementById('download_button');
-          button.innerHTML='Download '+filename+' (N='+images.length+')';
-          button.onclick = function() {
+          var dbutton = document.getElementById('download_button');
+          dbutton.innerHTML='Download '+filename;//+' (N='+images.length+')';
+          dbutton.onclick = function() {
             saveAs(content, filename);
           };
-          button.classList.remove("disabled");
-          button.disabled = false;
+          dbutton.classList.remove("disabled");
+          dbutton.disabled = false;
+          dbutton.style.visibility='visible';
         });
     }
   }
@@ -248,11 +268,21 @@ function runDetection() {
 
 
   startVideo(video).then(function (status) {
-    console.log("video started", status);
+
     if (status) {
+      console.log("video started");
       runDetection();
     } else {
+      console.log('time to show error message');
+      var errdiv = document.createElement("div");
+      errdiv.classList.add("alert-danger");
+      errdiv.classList.add("alert");
+      errdiv.innerHTML="<b>Error:</b> Cannot access webcam. Please check permissions.<br/><b>User Agent:</b>"+navigator.userAgent;
+      var el = document.getElementById("container1");
+      el.insertBefore(errdiv, el.childNodes[0]);
 
+      var el = document.getElementById('other');
+      el.style.visibility='hidden';
     }
   });
     </script>
