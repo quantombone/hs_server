@@ -6,6 +6,8 @@
   <link rel="stylesheet"
         href="bootstrap.min.css">
 
+  <link href="fa.min.css" rel="stylesheet">
+
   <link rel="apple-touch-icon" sizes="180x180"
         href="apple-touch-icon.png">
   <link rel="icon" type="image/png" sizes="32x32"
@@ -25,29 +27,31 @@
   <div style="width:100%; text-align:center;">
   <button id="start_button" class="btn btn-primary"
        style="visibility:hidden;"
-       onclick="start_capture()">Start</button>
+       onclick="start_capture()"><i class="fa fa-video"></i> Start</button>
+  <button id="download_button" class="btn btn-primary disabled" style="visibility:hidden;"
+       onclick="" disabled><i class="fa fa-save"></i> Download</button>
   </div>
 
-  <div style="width:100%; text-align:center;">
-  <button id="download_button" class="btn btn-primary disabled" style="visibility:hidden;"
-       onclick="">Download</button>
-  </div>
+
+
   </div>
 
 
   <div class="container" id="container1">
   <video playsinline id="myvideo"
-	 style="visibility: hidden;
+	 style="visibility: visible;
                 position:absolute;
                 left: 0;
-                top:0"></video>
+                top: 0;
+                text-align:center;
+                width:100%;
+                z-index: -10"></video>
 
-
-  <div id="other">
-  <canvas id="canvas" style="width:100%; text-align:center;"></canvas>
-  <br/>
-
+  <div id="other" class="container">
+  <canvas id="canvas" style="text-align:center; visibility: hidden;"></canvas>
+  <p id="indicator" class=""></p>
   <p id="elemH" class=""></p>
+
 
 
   <div class="container">
@@ -100,10 +104,11 @@
 
     }
 
-    const video = document.getElementById("myvideo");
-    const canvas = document.getElementById("canvas");
+    let video = document.getElementById("myvideo");
+    let canvas = document.getElementById("canvas");
     const dbutton = document.getElementById("download_button");
     const sbutton = document.getElementById("start_button");
+    const indicator = document.getElementById("indicator");
     let capture_on = false;
     let global_iteration = 0;
 
@@ -131,12 +136,12 @@
     var zipsummary = [];
     function start_capture() {
 
-      canvas.style.border = '10px solid red';
-      //document.body.style.backgroundColor='red';
+
+      video.style.border = '10px solid red';
 
       dbutton.classList.add("disabled");
       dbutton.disabled = true;
-      dbutton.style.visibility='hidden';
+
 
       sbutton.classList.add("disabled");
       sbutton.disabled = true;
@@ -147,6 +152,10 @@
       capture_on = true;
       clear_images_gallery();
       global_iteration = 0;
+
+      //canvas.style.visibility='visible';
+      //video.style.visibility='hidden';
+      runDetection();
     }
 
     function startVideo(video) {
@@ -237,7 +246,8 @@ async function add_captured_image(image_time, dataurl, iteration) {
   zipimages.file(imgname, base64, {base64: true, date: new Date(ziptime.getTime()-N*100000+iteration*100000)});
 
   // change start button text
-  sbutton.innerHTML='Record '+iteration+'/'+N;
+  indicator.innerHTML='Record '+iteration+'/'+N;
+  //indicator.innerHTML=
   //console.log('acp2 iteration', iteration);
 
   if (iteration == N) {
@@ -249,9 +259,11 @@ async function add_captured_image(image_time, dataurl, iteration) {
 function finish_zipfile() {
   capture_on = false;
 
+  //canvas.style.visibility='hidden';
+  //video.style.visibility='visible';
+
   //document.body.style.backgroundColor='white';
-  canvas.style.border = '0px solid red';
-  sbutton.innerHTML='Generating ZIP';
+  video.style.border = '0px solid red';
 
   var filename = F;
   if (F == 'date') {
@@ -274,32 +286,33 @@ function finish_zipfile() {
   console.log('Generating file: '+F)
   zip.generateAsync({type:"blob"},function updateCallback(metadata) {
     var msg = metadata.percent.toFixed(2) + "%";
-    sbutton.innerHTML='Generating ZIP '+msg;
+    //dbutton.style.visibility='visible';
+    indicator.innerHTML='Generating ZIP '+msg;
   }).then(function(content) {
-    sbutton.innerHTML='Start';
     sbutton.classList.remove("disabled");
     sbutton.disabled = false;
 
-    dbutton.innerHTML='Download '+filename +' (N='+N+', fps='+fps.toFixed(3)+')';
+    indicator.innerHTML='Download '+filename +' (N='+N+', fps='+fps.toFixed(3)+')';
     dbutton.onclick = function() {
       saveAs(content, filename);
     };
     dbutton.classList.remove("disabled");
     dbutton.disabled = false;
-    dbutton.style.visibility='visible';
+    //dbutton.style.visibility='visible';
   });
 
 }
 
 function runDetection() {
-  canvas.width = video.width;
-  canvas.height = video.height;
-  canvas.getContext("2d").drawImage(video,0,0,video.width,video.height);
-
-  // compute the time of the current image
-  var image_time = new Date().getTime();
 
   if (capture_on && global_iteration < N) {
+
+
+    canvas.getContext("2d").drawImage(video,0,0,video.width,video.height);
+
+    // compute the time of the current image
+    var image_time = new Date().getTime();
+
     global_iteration = global_iteration + 1;
     var dataurl = canvas.toDataURL("image/png");
     var current_iteration = global_iteration;
@@ -313,8 +326,9 @@ function runDetection() {
       }, 0);
     //var time2 = new Date().getTime();
     //console.log('time diff is ', time2-time1)
+    requestAnimationFrame(runDetection);
   }
-  requestAnimationFrame(runDetection);
+
 
 }
 
@@ -324,9 +338,11 @@ function runDetection() {
     if (status) {
       setTimeout(function() {
         sbutton.style.visibility='visible';
+        dbutton.style.visibility='visible';
         }, 100);
       console.log("video started");
-      runDetection();
+      canvas.width = video.width;
+      canvas.height = video.height;
     } else {
 
       canvas.height='0px'
