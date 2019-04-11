@@ -161,15 +161,18 @@
     function startVideo(video) {
       // Video must have height and width in order to be used as input for NN
       // Aspect ratio of 3/4 is used to support safari browser.
-      if (video.width == undefined) {
-        console.log('video.width  is undefined now')
+      if (!video.width) {
+        console.log('video.width is '+video.width+' now')
       }
 
-      if (video.height == undefined) {
-        console.log('video.height  is undefined now')
+      if (!video.height) {
+        console.log('video.height is '+video.height+' now')
       }
+
       video.width = video.width || 640;
       video.height = video.height || video.width * (3 / 4)
+
+      console.log('Width/height is now '+video.width+'/'+video.height);
 
       return new Promise(function (resolve, reject) {
         navigator.mediaDevices
