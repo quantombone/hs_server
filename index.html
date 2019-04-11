@@ -47,7 +47,6 @@
   <canvas id="canvas" style="width:100%; text-align:center;"></canvas>
   <br/>
 
-
   <p id="elemH" class=""></p>
 
   <div class="container">
@@ -106,6 +105,8 @@
     const sbutton = document.getElementById("start_button");
     let capture_on = false;
     let global_iteration = 0;
+
+    let app_version = '0.1.0';
 
     let fps = -1;
 
@@ -247,10 +248,11 @@ function finish_zipfile() {
 
   console.log('fps is:', fps)
   var jsonny = {'data':zipsummary,
-                'fps': fps,
-                'browser':navigator.userAgent,
-                'url': window.location.href
-               };
+      'fps': fps,
+      'browser':navigator.userAgent,
+      'url': window.location.href,
+      'app_version': app_version
+      };
 
   zip.file("summary.json", JSON.stringify(jsonny))
 
