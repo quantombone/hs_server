@@ -28,7 +28,7 @@
                 left: 0;
                 top:0"></video>
 
-  <canvas id="canvas"></canvas>
+  <canvas id="canvas" style="width:100%; text-align:center;"></canvas>
   <br/>
 
   <button id="start_button" class="btn btn-primary"
@@ -39,22 +39,29 @@
 
   <p id="elemH" class=""></p>
 
-  <div id="images"></div>
+  <div class="container">
+    <div class="row" id="images">
+
+
+    </div>
+  </div>
 
 
   <p class="lead info">
     Welcome to the Video Recorder Javascript App! If you hit 'start' we
     will record N images into a zip file, and a download button will show
-    up. Here are other variants:
+    up.
+</p>
+  <p class="lead info">
+Here are other variants:
     <br/>
-    <a href="index3.html?N=100&F=date&H=240&W=320">index3.html?N=100&F=date&H=240&W=320</a>
+    <a href="index.html?N=100&F=date&H=240&W=320">index.html?N=100&F=date&H=240&W=320</a>
     <br/>
-    <a href="index3.html?N=100&F=example.zip">index3.html?N=100&F=example.zip</a>
+    <a href="index.html?N=100&F=example.zip">index.html?N=100&F=example.zip</a>
     <br/>
-    <a href="index3.html?N=1000&F=date">index3.html?N=1000&F=date</a>
+    <a href="index.html?N=1000&F=date">index.html?N=1000&F=date</a>
     <br/>
-    <a href="index3.html?N=1000&F=example.zip">index3.html?N=1000&F=example.zip</a>
-
+    <a href="index.html?N=1000&F=example.zip">index.html?N=1000&F=example.zip</a>
   </p>
 
   </div>
@@ -108,6 +115,12 @@
 
       var button = document.getElementById('download_button');
       button.classList.add("disabled");
+      button.disabled = true;
+
+      var sbutton = document.getElementById('start_button');
+      sbutton.classList.add("disabled");
+      sbutton.disabled = true;
+
       zip = new JSZip();
       zipimages = zip.folder("images");
       capture_on = true;
@@ -166,17 +179,35 @@ function runDetection() {
   canvas.getContext("2d").drawImage(video,0,0,video.width,video.height);
 
   if (capture_on) {
+    var newdiv = document.createElement("div");
+    var newdiv2 = document.createElement("div");
+    newdiv.classList.add("col-sm");
+    var newtit = document.createElement("div");
     var img = document.createElement("img");
     var dataurl = canvas.toDataURL("image/png");
     img.src = dataurl;
     images.push(img.src);
+
+    var sbutton = document.getElementById('start_button');
+    sbutton.innerHTML='Record '+images.length+'/'+N;
 
     //set the size of the tiny preview image to show
     img.width="160";
     img.height="120";
     var el = document.getElementById("images");
 
-    el.insertBefore(img, el.childNodes[0]);
+
+    newtit.innerHTML='Index '+(images.length-1);
+    newtit.style.textAlign='center';
+
+    newdiv2.style.textAlign='center';
+    newdiv.appendChild(newtit);
+    newdiv2.appendChild(img);
+    newdiv.appendChild(newdiv2);
+
+
+    el.insertBefore(newdiv, el.childNodes[0]);
+    //el.appendChild(newdiv);
 
     var base64 = dataurl.replace(/^data:image\/(png|jpg);base64,/, "")
     var imgname = 'image'+pad(images.length-1,5)+'.png';
@@ -184,20 +215,30 @@ function runDetection() {
     if (images.length == N) {
       capture_on = false;
 
+      var sbutton = document.getElementById('start_button');
+      sbutton.innerHTML='Generating ZIP';
+
       var filename = F;
       if (F == 'date') {
         filename = (new Date()).toISOString() + '.zip';
       }
 
       console.log('Generating file: '+F)
-      zip.generateAsync({type:"blob"})
-        .then(function(content) {
+      zip.generateAsync({type:"blob"},function updateCallback(metadata)
+      {
+        var msg = metadata.percent.toFixed(2) + "%";
+        sbutton.innerHTML='Generating ZIP '+msg;
+      }).then(function(content) {
+          sbutton.innerHTML='Start';
+          sbutton.classList.remove("disabled");
+          sbutton.disabled = false;
           var button = document.getElementById('download_button');
           button.innerHTML='Download '+filename+' (N='+images.length+')';
           button.onclick = function() {
             saveAs(content, filename);
           };
           button.classList.remove("disabled");
+          button.disabled = false;
         });
     }
   }
