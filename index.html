@@ -169,8 +169,8 @@
         console.log('video.height is '+video.height+' now')
       }
 
-      video.width = video.width || 640;
-      video.height = video.height || video.width * (3 / 4)
+      //video.width = video.width || 640;
+      //video.height = video.height || video.width * (3 / 4)
 
       console.log('Width/height is now '+video.width+'/'+video.height);
 
@@ -186,6 +186,9 @@
             window.localStream = stream;
             video.srcObject = stream
             video.onloadedmetadata = () => {
+              console.log('before play, videoHeight/width are '+video.videoHeight+'/'+video.videoWidth);
+              video.width=video.videoWidth;
+              video.height=video.videoHeight;
               video.play();
 
               document.getElementById('elemH').innerHTML = 'N='+N+' H='+myvideo.height+' W='+myvideo.width;
