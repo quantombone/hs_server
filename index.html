@@ -21,6 +21,20 @@
 </head>
 
 <body>
+
+  <div style="position: absolute; top:0px; width:100%; text-align:center;">
+  <div style="width:100%; text-align:center;">
+  <button id="start_button" class="btn btn-primary"
+       style="visibility:hidden;"
+       onclick="start_capture()">Start</button>
+  </div>
+  <div style="width:100%; text-align:center;">
+  <button id="download_button" class="btn btn-primary disabled" style="visibility:hidden;"
+       onclick="">Download</button>
+  </div>
+  </div>
+
+
   <div class="container" id="container1">
   <video playsinline id="myvideo"
 	 style="visibility: hidden;
@@ -28,18 +42,11 @@
                 left: 0;
                 top:0"></video>
 
+
   <div id="other">
   <canvas id="canvas" style="width:100%; text-align:center;"></canvas>
   <br/>
 
-  <div style="width:100%; text-align:center;">
-  <button id="start_button" class="btn btn-primary"
-       onclick="start_capture()">Start</button>
-  </div>
-  <div style="width:100%; text-align:center;">
-  <button id="download_button" class="btn btn-primary disabled" style="visibility:hidden;"
-       onclick="">Download</button>
-  </div>
 
   <p id="elemH" class=""></p>
 
@@ -84,14 +91,26 @@
       }
     };
 
+    function clear_images_gallery() {
+      //clear out images
+      var myNode = document.getElementById("images");
+      while (myNode.firstChild) {
+        myNode.removeChild(myNode.firstChild);
+      }
+
+    }
+
     const video = document.getElementById("myvideo");
     const canvas = document.getElementById("canvas");
-
+    const dbutton = document.getElementById("download_button");
+    const sbutton = document.getElementById("start_button");
     let capture_on = false;
+    let global_iteration = 0;
+
+    let fps = -1;
 
     var N = getUrlParameter('N') || 100;
     var F = getUrlParameter('F') || 'images.zip';
-
 
     var height = getUrlParameter('H');
     var width = getUrlParameter('W');
@@ -101,35 +120,25 @@
       myvideo.height=height;
     }
 
-    var images = [];
+    //var images = [];
     var zip;
     var zipimages;
     var zipsummary = [];
     function start_capture() {
 
-      var dbutton = document.getElementById('download_button');
       dbutton.classList.add("disabled");
       dbutton.disabled = true;
       dbutton.style.visibility='hidden';
-      var sbutton = document.getElementById('start_button');
+
       sbutton.classList.add("disabled");
       sbutton.disabled = true;
 
       zip = new JSZip();
       zipimages = zip.folder("images");
       capture_on = true;
-      images = [];
-
-      var myNode = document.getElementById("images");
-      while (myNode.firstChild) {
-        myNode.removeChild(myNode.firstChild);
-      }
+      clear_images_gallery();
+      global_iteration = 0;
     }
-
-    function stop_capture() {
-      capture_on = false;
-    }
-
 
     function startVideo(video) {
       // Video must have height and width in order to be used as input for NN
@@ -173,34 +182,21 @@ function pad(n, width, z) {
   return n.length >= width ? n : new Array(width - n.length + 1).join(z) + n;
 }
 
-function runDetection() {
-  canvas.width = video.width;
-  canvas.height = video.height;
-
-  var image_time = new Date().getTime();
-  canvas.getContext("2d").drawImage(video,0,0,video.width,video.height);
-
-  if (capture_on) {
-    var newdiv = document.createElement("div");
-    var newdiv2 = document.createElement("div");
-    newdiv.classList.add("col-sm");
-    var newtit = document.createElement("div");
-    var img = document.createElement("img");
-    var dataurl = canvas.toDataURL("image/png");
-    img.src = dataurl;
-    images.push(img.src);
-
-
-
-    var sbutton = document.getElementById('start_button');
-    sbutton.innerHTML='Record '+images.length+'/'+N;
-
-    //set the size of the tiny preview image to show
-    img.width="160";
-    img.height="120";
+async function add_to_gallery(dataurl, iteration) {
+  // add to gallery
+  var newdiv = document.createElement("div");
+  var newdiv2 = document.createElement("div");
+  newdiv.classList.add("col-sm");
+  var newtit = document.createElement("div");
+  var img = document.createElement("img");
+  img.src = dataurl;
+  //set the size of the tiny preview image to show
+  img.width="160";
+  img.height="120";
+  img.onload = function () {
     var el = document.getElementById("images");
 
-    newtit.innerHTML='Image '+(images.length-1);
+    newtit.innerHTML='Image '+(iteration-1);
     newtit.style.textAlign='center';
 
     newdiv2.style.textAlign='center';
@@ -208,59 +204,98 @@ function runDetection() {
     newdiv2.appendChild(img);
     newdiv.appendChild(newdiv2);
 
-
     el.insertBefore(newdiv, el.childNodes[0]);
     //el.appendChild(newdiv);
+  }
+}
 
-    var base64 = dataurl.replace(/^data:image\/(png|jpg);base64,/, "")
-    var imgname = 'image'+pad(images.length-1,5)+'.png';
 
-    zipsummary.push({'image':imgname, 'time':image_time, 'height':
-    height, 'width': width});
+async function add_captured_image(image_time, dataurl, iteration) {
+  //console.log('acp1 iteration', iteration);
+  add_to_gallery(dataurl, iteration);
 
-    zipimages.file(imgname, base64, {base64: true});
-    if (images.length == N) {
-      capture_on = false;
+  // add to zip file and to zipsummary
+  var base64 = dataurl.replace(/^data:image\/(png|jpg);base64,/, "")
+  var imgname = 'image'+pad(iteration-1,5)+'.png';
 
-      var sbutton = document.getElementById('start_button');
-      sbutton.innerHTML='Generating ZIP';
+  zipsummary.push({'image':imgname, 'time':image_time,
+                   'height':canvas.height, 'width': canvas.width});
+  zipimages.file(imgname, base64, {base64: true});
 
-      var filename = F;
-      if (F == 'date') {
-        filename = (new Date()).toISOString() + '.zip';
-      }
+  // change start button text
+  sbutton.innerHTML='Record '+iteration+'/'+N;
+  //console.log('acp2 iteration', iteration);
 
-      var fps = zipsummary.length /
-      ((zipsummary[zipsummary.length-1].time - zipsummary[0].time) / 1000.0);
+  if (iteration == N) {
+    finish_zipfile();
+  }
 
-      console.log('fps is:', fps)
-      var jsonny = {'data':zipsummary,
-        'fps': fps,
-        'browser':navigator.userAgent,
-        'url': window.location.href
-      };
+}
 
-      zip.file("summary.json", JSON.stringify(jsonny))
+function finish_zipfile() {
+  capture_on = false;
 
-      console.log('Generating file: '+F)
-      zip.generateAsync({type:"blob"},function updateCallback(metadata)
-      {
-        var msg = metadata.percent.toFixed(2) + "%";
-        sbutton.innerHTML='Generating ZIP '+msg;
-      }).then(function(content) {
-          sbutton.innerHTML='Start';
-          sbutton.classList.remove("disabled");
-          sbutton.disabled = false;
-          var dbutton = document.getElementById('download_button');
-          dbutton.innerHTML='Download '+filename;//+' (N='+images.length+')';
-          dbutton.onclick = function() {
-            saveAs(content, filename);
-          };
-          dbutton.classList.remove("disabled");
-          dbutton.disabled = false;
-          dbutton.style.visibility='visible';
-        });
-    }
+  sbutton.innerHTML='Generating ZIP';
+
+  var filename = F;
+  if (F == 'date') {
+    filename = (new Date()).toISOString() + '.zip';
+  }
+
+  fps = zipsummary.length /
+    ((zipsummary[zipsummary.length-1].time - zipsummary[0].time) / 1000.0);
+
+  console.log('fps is:', fps)
+  var jsonny = {'data':zipsummary,
+                'fps': fps,
+                'browser':navigator.userAgent,
+                'url': window.location.href
+               };
+
+  zip.file("summary.json", JSON.stringify(jsonny))
+
+  console.log('Generating file: '+F)
+  zip.generateAsync({type:"blob"},function updateCallback(metadata) {
+    var msg = metadata.percent.toFixed(2) + "%";
+    sbutton.innerHTML='Generating ZIP '+msg;
+  }).then(function(content) {
+    sbutton.innerHTML='Start';
+    sbutton.classList.remove("disabled");
+    sbutton.disabled = false;
+
+    dbutton.innerHTML='Download '+filename +' (N='+N+', fps='+fps.toFixed(3)+')';
+    dbutton.onclick = function() {
+      saveAs(content, filename);
+    };
+    dbutton.classList.remove("disabled");
+    dbutton.disabled = false;
+    dbutton.style.visibility='visible';
+  });
+
+}
+
+function runDetection() {
+  canvas.width = video.width;
+  canvas.height = video.height;
+  canvas.getContext("2d").drawImage(video,0,0,video.width,video.height);
+
+  // compute the time of the current image
+  var image_time = new Date().getTime();
+
+  if (capture_on && global_iteration < N) {
+    global_iteration = global_iteration + 1;
+    var dataurl = canvas.toDataURL("image/png");
+    var current_iteration = global_iteration;
+    //var time1 = new Date().getTime();
+
+    // non async version of the call
+    //add_captured_image(image_time, dataurl, global_iteration);
+    // async version of the call
+    setTimeout(function() {
+      add_captured_image(image_time, dataurl, current_iteration);
+      }, 0);
+    //var time2 = new Date().getTime();
+    //console.log('time diff is ', time2-time1)
   }
   requestAnimationFrame(runDetection);
 
@@ -270,10 +305,15 @@ function runDetection() {
   startVideo(video).then(function (status) {
 
     if (status) {
+      setTimeout(function() {
+        sbutton.style.visibility='visible';
+        }, 100);
       console.log("video started");
       runDetection();
     } else {
-      console.log('time to show error message');
+
+      canvas.height='0px'
+      video.height='0px';
       var errdiv = document.createElement("div");
       errdiv.classList.add("alert-danger");
       errdiv.classList.add("alert");
