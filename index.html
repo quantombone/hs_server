@@ -4,8 +4,7 @@
   <meta charset="UTF-8">
   <title>HTML5 video viewer</title>
   <link rel="stylesheet"
-        href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
-        integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+        href="bootstrap.min.css">
 
   <link rel="apple-touch-icon" sizes="180x180"
         href="apple-touch-icon.png">
@@ -22,12 +21,13 @@
 
 <body>
 
-  <div style="position: absolute; top:0px; width:100%; text-align:center;">
+  <div style="position: absolute; top:3px; width:100%; text-align:center;">
   <div style="width:100%; text-align:center;">
   <button id="start_button" class="btn btn-primary"
        style="visibility:hidden;"
        onclick="start_capture()">Start</button>
   </div>
+
   <div style="width:100%; text-align:center;">
   <button id="download_button" class="btn btn-primary disabled" style="visibility:hidden;"
        onclick="">Download</button>
@@ -48,6 +48,7 @@
   <br/>
 
   <p id="elemH" class=""></p>
+
 
   <div class="container">
     <div class="row" id="images">
@@ -110,6 +111,8 @@
 
     let fps = -1;
 
+    var gallery = getUrlParameter('gallery') || false;
+
     var N = getUrlParameter('N') || 100;
     var F = getUrlParameter('F') || 'images.zip';
 
@@ -123,9 +126,13 @@
 
     //var images = [];
     var zip;
+    var ziptime;
     var zipimages;
     var zipsummary = [];
     function start_capture() {
+
+      canvas.style.border = '10px solid red';
+      //document.body.style.backgroundColor='red';
 
       dbutton.classList.add("disabled");
       dbutton.disabled = true;
@@ -135,6 +142,7 @@
       sbutton.disabled = true;
 
       zip = new JSZip();
+      ziptime = new Date();
       zipimages = zip.folder("images");
       capture_on = true;
       clear_images_gallery();
@@ -213,7 +221,9 @@ async function add_to_gallery(dataurl, iteration) {
 
 async function add_captured_image(image_time, dataurl, iteration) {
   //console.log('acp1 iteration', iteration);
-  add_to_gallery(dataurl, iteration);
+
+  if (gallery)
+    add_to_gallery(dataurl, iteration);
 
   // add to zip file and to zipsummary
   var base64 = dataurl.replace(/^data:image\/(png|jpg);base64,/, "")
@@ -221,7 +231,10 @@ async function add_captured_image(image_time, dataurl, iteration) {
 
   zipsummary.push({'image':imgname, 'time':image_time,
                    'height':canvas.height, 'width': canvas.width});
-  zipimages.file(imgname, base64, {base64: true});
+  //const currDate = new Date();
+  //const dateWithOffset = new Date(currDate.getTime() - currDate.getTimezoneOffset() * 60000);
+  console.log('iteration', iteration, ' time is', image_time)
+  zipimages.file(imgname, base64, {base64: true, date: new Date(ziptime.getTime()-N*100000+iteration*100000)});
 
   // change start button text
   sbutton.innerHTML='Record '+iteration+'/'+N;
@@ -236,6 +249,8 @@ async function add_captured_image(image_time, dataurl, iteration) {
 function finish_zipfile() {
   capture_on = false;
 
+  //document.body.style.backgroundColor='white';
+  canvas.style.border = '0px solid red';
   sbutton.innerHTML='Generating ZIP';
 
   var filename = F;
