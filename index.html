@@ -2,8 +2,10 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Hand Detection</title>
-  <link rel="stylesheet" href="track.css">
+  <title>HTML5 video viewer</title>
+  <link rel="stylesheet"
+        href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+        integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
 
   <link rel="apple-touch-icon" sizes="180x180"
         href="apple-touch-icon.png">
@@ -15,40 +17,207 @@
   <link rel="mask-icon" href="safari-pinned-tab.svg" color="#5bbad5">
   <meta name="msapplication-TileColor" content="#00aba9">
   <meta name="theme-color" content="#ffffff">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
 </head>
 
 <body>
-  <img id="intro" src="intro.gif" style="position:absolute; left:0px; top:0px;
-  width:100%; height:100%;"/>
-  <canvas id="canvas" class="canvasbox"></canvas>
+  <div class="container">
   <video playsinline id="myvideo"
-	 height="360" width="520"
 	 style="visibility: hidden;
                 position:absolute;
                 left: 0;
                 top:0"></video>
 
-  <div style="position:absolute; top:0px; right:0px;">
-  <div id="updatenote" class="updatenote mt10"> Loading Model ..</div>
-  <div id="flip_button" class="updatenote mt10"
-       style="visibility:hidden;"
-       onclick="flip_function()">Flip Image</div>
-  <div id="thresh_button1" class="updatenote mt10"
-       style="visibility:visible;"
-       onclick="thresh_increase(0.1)">T+</div>
-  <div id="thresh_button2" class="updatenote mt10"
-       style="visibility:visible;"
-       onclick="thresh_increase(-0.1)">T-</div>
-  <div id="thresh_button3" class="updatenote mt10"
-       style="visibility:visible;">Thresh</div>
+  <canvas id="canvas"></canvas>
+  <br/>
+
+  <button id="start_button" class="btn btn-primary"
+       onclick="start_capture()">Start</button>
+
+  <button id="download_button" class="btn btn-primary disabled"
+       onclick="">Download</button>
+
+  <p id="elemH" class=""></p>
+
+  <div id="images"></div>
+
+
+  <p class="lead info">
+    Welcome to the Video Recorder Javascript App! If you hit 'start' we
+    will record N images into a zip file, and a download button will show
+    up. Here are other variants:
+    <br/>
+    <a href="index3.html?N=100&F=date&H=240&W=320">index3.html?N=100&F=date&H=240&W=320</a>
+    <br/>
+    <a href="index3.html?N=100&F=example.zip">index3.html?N=100&F=example.zip</a>
+    <br/>
+    <a href="index3.html?N=1000&F=date">index3.html?N=1000&F=date</a>
+    <br/>
+    <a href="index3.html?N=1000&F=example.zip">index3.html?N=1000&F=example.zip</a>
+
+  </p>
+
   </div>
+  <script>
+
+    var getUrlParameter = function getUrlParameter(sParam) {
+      var sPageURL = window.location.search.substring(1),
+      sURLVariables = sPageURL.split('&'),
+      sParameterName,
+      i;
+
+      for (i = 0; i < sURLVariables.length; i++) {
+        sParameterName = sURLVariables[i].split('=');
+
+        if (sParameterName[0] === sParam) {
+          return sParameterName[1] === undefined ? true :
+            decodeURIComponent(sParameterName[1]);
+        }
+      }
+    };
 
 
-  <!-- <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs/dist/tf.min.js"> </script> -->
-  <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/tensorflow/0.13.0/tf.min.js"></script> -->
- <script src="tf.min.js"></script>
-  <script src="index.js?sdf=34"> </script>
-  <script src="track.js?qe=4344"></script>
+
+    const video = document.getElementById("myvideo");
+    const canvas = document.getElementById("canvas");
+
+    let capture_on = false;
+
+    var N = getUrlParameter('N') || 100;
+    var F = getUrlParameter('F') || 'images.zip';
+
+
+    var height = getUrlParameter('H');
+    var width = getUrlParameter('W');
+    if (height != undefined && width != undefined) {
+      console.log('Setting user provided H='+height+' W='+width);
+      myvideo.width=width;
+      myvideo.height=height;
+    }
+
+
+
+
+
+
+
+    var images = [];
+    var zip;
+    var zipimages;
+    function start_capture() {
+
+      var button = document.getElementById('download_button');
+      button.classList.add("disabled");
+      zip = new JSZip();
+      zipimages = zip.folder("images");
+      capture_on = true;
+      images = [];
+
+      var myNode = document.getElementById("images");
+      while (myNode.firstChild) {
+        myNode.removeChild(myNode.firstChild);
+      }
+    }
+
+    function stop_capture() {
+      capture_on = false;
+    }
+
+
+    function startVideo(video) {
+  // Video must have height and width in order to be used as input for NN
+  // Aspect ratio of 3/4 is used to support safari browser.
+  video.width = video.width || 640;
+  video.height = video.height || video.width * (3 / 4)
+
+  return new Promise(function (resolve, reject) {
+    navigator.mediaDevices
+      .getUserMedia({
+        audio: false,
+        video: {
+          facingMode: "environment"
+        }
+      })
+      .then(stream => {
+        window.localStream = stream;
+        video.srcObject = stream
+        video.onloadedmetadata = () => {
+          video.play();
+
+          document.getElementById('elemH').innerHTML = 'N='+N+' H='+myvideo.height+' W='+myvideo.width;
+          resolve(true)
+        }
+      }).catch(function (err) {
+        resolve(false)
+      });
+  });
+
+}
+
+function pad(n, width, z) {
+  z = z || '0';
+  n = n + '';
+  return n.length >= width ? n : new Array(width - n.length + 1).join(z) + n;
+}
+
+function runDetection() {
+  canvas.width = video.width;
+  canvas.height = video.height;
+  canvas.getContext("2d").drawImage(video,0,0,video.width,video.height);
+
+  if (capture_on) {
+    var img = document.createElement("img");
+    var dataurl = canvas.toDataURL("image/png");
+    img.src = dataurl;
+    images.push(img.src);
+
+    //set the size of the tiny preview image to show
+    img.width="160";
+    img.height="120";
+    var el = document.getElementById("images");
+
+    el.insertBefore(img, el.childNodes[0]);
+
+    var base64 = dataurl.replace(/^data:image\/(png|jpg);base64,/, "")
+    var imgname = 'image'+pad(images.length-1,5)+'.png';
+    zipimages.file(imgname, base64, {base64: true});
+    if (images.length == N) {
+      capture_on = false;
+
+      var filename = F;
+      if (F == 'date') {
+        filename = (new Date()).toISOString() + '.zip';
+      }
+
+      console.log('Generating file: '+F)
+      zip.generateAsync({type:"blob"})
+        .then(function(content) {
+          var button = document.getElementById('download_button');
+          button.innerHTML='Download '+filename+' (N='+images.length+')';
+          button.onclick = function() {
+            saveAs(content, filename);
+          };
+          button.classList.remove("disabled");
+        });
+    }
+  }
+  requestAnimationFrame(runDetection);
+
+}
+
+
+  startVideo(video).then(function (status) {
+    console.log("video started", status);
+    if (status) {
+      runDetection();
+    } else {
+
+    }
+  });
+    </script>
+
+ <script src="jszip.min.js"></script>
+ <script src="FileSaver.js"></script>
 </body>
 
 </html>
